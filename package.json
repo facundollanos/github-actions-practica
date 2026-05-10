@@ -1,0 +1,9 @@
+{
+  "name": "github-actions-practica",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node tests/suma.test.js",
+    "lint": "echo 'Corriendo linter...' && exit 0",
+    "build": "echo 'Construyendo proyecto...' && exit 0"
+  }
+}
