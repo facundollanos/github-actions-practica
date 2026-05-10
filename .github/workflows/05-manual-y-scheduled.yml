@@ -1,0 +1,64 @@
+# WORKFLOW 5: Ejecución manual y programada
+#
+# workflow_dispatch → botón "Run workflow" en GitHub
+# schedule         → cron job (se ejecuta automáticamente)
+
+name: Manual y Programado
+
+on:
+  # Botón manual con inputs personalizados
+  workflow_dispatch:
+    inputs:
+      ambiente:
+        description: 'A qué ambiente deployar'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+      ejecutar_tests:
+        description: 'Correr tests antes de deployar?'
+        required: false
+        default: true
+        type: boolean
+
+      version:
+        description: 'Versión a deployar (ej: 1.2.3)'
+        required: false
+        type: string
+
+  # Cron: min hora dia-mes mes dia-semana
+  schedule:
+    - cron: '0 8 * * 1-5'    # lunes a viernes a las 8am UTC
+    - cron: '0 0 1 * *'      # primer día de cada mes a medianoche
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Acceder a los inputs del workflow_dispatch
+      - name: Mostrar configuración
+        run: |
+          echo "Ambiente: ${{ inputs.ambiente }}"
+          echo "Correr tests: ${{ inputs.ejecutar_tests }}"
+          echo "Version: ${{ inputs.version }}"
+
+      - name: Correr tests (condicional)
+        if: inputs.ejecutar_tests == true
+        run: npm test
+
+      - name: Deploy a ${{ inputs.ambiente }}
+        run: echo "Deployando versión ${{ inputs.version }} a ${{ inputs.ambiente }}"
+
+      # Saber si fue manual o automático
+      - name: Log del trigger
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Ejecutado automáticamente por cron"
+          else
+            echo "Ejecutado manualmente por ${{ github.actor }}"
+          fi

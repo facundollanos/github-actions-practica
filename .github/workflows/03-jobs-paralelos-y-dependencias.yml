@@ -1,0 +1,73 @@
+# WORKFLOW 3: Jobs en paralelo y con dependencias
+#
+# Por defecto, todos los jobs corren EN PARALELO.
+# Con "needs" podés crear dependencias entre jobs.
+#
+# Resultado visual en GitHub:
+#
+#   [lint] ──┐
+#            ├──► [test] ──► [deploy]
+#   [build] ─┘
+#
+# lint y build corren en paralelo.
+# test espera a que AMBOS terminen.
+# deploy espera a que test termine.
+
+name: Jobs Paralelos y Dependencias
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run lint
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: npm run build
+
+      # Guardar el resultado del build para usarlo en otro job
+      - name: Subir artefacto del build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: ./dist          # carpeta que generaría tu build real
+          if-no-files-found: ignore
+
+  test:
+    runs-on: ubuntu-latest
+    needs: [lint, build]        # espera a lint Y build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test                 # espera a que test pase
+    # Solo deployar si es push a main (no en PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Bajar el artefacto que subió el job "build"
+      - name: Bajar artefacto del build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
+      - name: Deployar
+        run: echo "Deployando a producción..."

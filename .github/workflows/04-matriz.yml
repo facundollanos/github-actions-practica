@@ -1,0 +1,58 @@
+# WORKFLOW 4: Matrix builds
+#
+# Una matrix corre el MISMO job con distintas combinaciones de variables.
+# Útil para testear en múltiples versiones de Node, Python, OS, etc.
+#
+# Este ejemplo crea 6 combinaciones automáticamente:
+#   Node 18 + Ubuntu
+#   Node 18 + Windows
+#   Node 20 + Ubuntu
+#   Node 20 + Windows
+#   Node 22 + Ubuntu
+#   Node 22 + Windows
+
+name: Matrix Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-matriz:
+    runs-on: ${{ matrix.os }}   # el OS también es parte de la matrix
+
+    strategy:
+      matrix:
+        node-version: ['18', '20', '22']
+        os: [ubuntu-latest, windows-latest]
+
+        # Excluir combinaciones específicas
+        exclude:
+          - os: windows-latest
+            node-version: '18'   # no testear Node 18 en Windows
+
+        # Agregar combinaciones extra con variables adicionales
+        include:
+          - os: ubuntu-latest
+            node-version: '20'
+            es-lts: true         # variable extra solo para esta combinación
+
+      # Si una combinación falla, las demás siguen corriendo
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - run: npm install
+      - run: npm test
+
+      - name: Step solo para la versión LTS
+        if: matrix.es-lts == true
+        run: echo "Esta es la versión LTS, hacemos algo extra"
