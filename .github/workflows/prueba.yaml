@@ -1,0 +1,32 @@
+name:
+
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  iniciar_servidor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: configurar python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+          
+      - name: mostrar version python
+        run: python --version
+      - name: mostrar version pip
+        run: pip --version
+
+      - name: ejecutar hola mundo
+        run: echo "Hola Mundo"
+
+      - name: ejecutar script python
+        run: python -c "print('Hola desde Python')"
